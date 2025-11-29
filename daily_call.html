@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>12组座位表 - 座位编辑</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f8fafc;
+            font-family: Arial, sans-serif;
+            position: relative;
+            padding: 20px;
+        }
+        
+        .button-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 10;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            max-width: 90vw;
+        }
+        
+        .btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            white-space: nowrap;
+        }
+        
+        .btn-import {
+            background-color: #4a6cf7;
+            color: white;
+        }
+        
+        .btn-call {
+            background-color: #f59e0b;
+            color: white;
+        }
+        
+        .btn-call.call-mode {
+            background-color: #10b981;
+            animation: pulse 1.5s infinite;
+        }
+        
+        .btn-edit {
+            background-color: #8b5cf6;
+            color: white;
+        }
+        
+        .btn-edit.edit-mode {
+            background-color: #ef4444;
+            animation: pulse 1.5s infinite;
+        }
+        
+        .btn-clear {
+            background-color: #64748b;
+            color: white;
+        }
+        
+        .btn-finish {
+            background-color: #059669;
+            color: white;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            70% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .groups-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            width: 100%;
+        }
+        
+        .group {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+            padding: 15px;
+        }
+        
+        .group-header {
+            text-align: center;
+            font-weight: 600;
+            color: #4a6cf7;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
+        .group-rows {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+        
+        .cell {
+            padding: 12px 8px;
+            background-color: white;
+            text-align: center;
+            font-size: 14px;
+            min-height: 50px;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s ease;
+            word-break: break-word;
+            position: relative;
+            cursor: default;
+            user-select: none;
+        }
+        
+        .cell.draggable {
+            cursor: move;
+        }
+        
+        .cell.draggable:hover {
+            background-color: #e0e7ff;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .cell.dragging {
+            opacity: 0.5;
+            transform: scale(1.05);
+            z-index: 10;
+            box-shadow: 0 4px 12px rgba(74, 108, 247, 0.3);
+            position: absolute;
+        }
+        
+        .cell.drag-over {
+            background-color: #dbeafe;
+            transform: scale(1.02);
+            box-shadow: inset 0 0 0 2px #4a6cf7;
+        }
+        
+        .cell.selected {
+            background-color: #3b82f6;
+            color: white;
+            transform: scale(1.03);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+        }
+        
+        /* Modal styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal {
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+        
+        .modal-overlay.active .modal {
+            transform: scale(1);
+        }
+        
+        .modal-header {
+            padding: 20px;
+            background-color: #4a6cf7;
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .modal-body {
+            padding: 20px;
+        }
+        
+        .modal-textarea {
+            width: 100%;
+            height: 200px;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            resize: vertical;
+            margin-bottom: 16px;
+        }
+        
+        .modal-textarea:focus {
+            outline: none;
+            border-color: #4a6cf7;
+            box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.1);
+        }
+        
+        .modal-footer {
+            padding: 16px 20px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            border-top: 1px solid #e2e8f0;
+            background-color: #f8fafc;
+        }
+        
+        .modal-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .modal-btn-cancel {
+            background-color: #64748b;
+            color: white;
+        }
+        
+        .modal-btn-confirm {
+            background-color: #4a6cf7;
+            color: white;
+        }
+        
+        /* Call name modal */
+        .call-modal {
+            text-align: center;
+            padding: 40px 20px;
+        }
+        
+        .call-name {
+            font-size: 32px;
+            font-weight: bold;
+            color: #4a6cf7;
+            margin: 20px 0;
+            min-height: 60px;
+        }
+        
+        .call-btns {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        
+        /* Finish call modal */
+        .finish-modal {
+            padding: 20px;
+        }
+        
+        .finish-textarea {
+            width: 100%;
+            height: 200px;
+            padding: 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+            margin-bottom: 16px;
+            background-color: #f8fafc;
+            white-space: pre;
+        }
+        
+        /* Edit mode indicator */
+        .edit-mode-indicator,
+        .call-mode-indicator {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
+            animation: pulse-small 2s infinite;
+            z-index: 9;
+        }
+        
+        .edit-mode-indicator {
+            background-color: #ef4444;
+            color: white;
+            box-shadow: 0 4px 6px rgba(239, 68, 68, 0.3);
+        }
+        
+        .call-mode-indicator {
+            background-color: #10b981;
+            color: white;
+            box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);
+        }
+        
+        @keyframes pulse-small {
+            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+            70% { box-shadow: 0 0 0 4px rgba(59, 130, 246, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        }
+        
+        /* Drag clone for visual feedback */
+        .drag-clone {
+            position: absolute;
+            background-color: #4a6cf7;
+            color: white;
+            border-radius: 6px;
+            padding: 12px 8px;
+            font-size: 14px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(74, 108, 247, 0.5);
+            pointer-events: none;
+            z-index: 1000;
+            transform: translate(-50%, -50%);
+            min-width: 60px;
+            min-height: 40px;
+        }
+        
+        @media (max-width: 768px) {
+            .button-container {
+                top: 10px;
+                right: 10px;
+                flex-direction: column;
+                align-items: flex-end;
+            }
+            
+            .groups-container {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            }
+            
+            .cell {
+                padding: 10px 6px;
+                font-size: 13px;
+                min-height: 45px;
+            }
+            
+            .btn {
+                width: auto;
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .groups-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="button-container">
+        <button class="btn btn-import" id="importBtn">导入</button>
+        <button class="btn btn-edit" id="editBtn">编辑座位</button>
+        <button class="btn btn-clear" id="clearBtn">清空选择</button>
+        <button class="btn btn-call" id="callBtn">点名</button>
+        <button class="btn btn-finish" id="finishBtn">完成点名</button>
+    </div>
+    
+    <div class="groups-container" id="groupsContainer">
+        <!-- Groups will be generated by JavaScript -->
+    </div>
+    
+    <!-- Import Modal -->
+    <div class="modal-overlay" id="importModal">
+        <div class="modal">
+            <div class="modal-header">
+                导入名单
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 12px; color: #64748b;">请输入名单，每行一个姓名（空白行也会占用一个单元格）：</p>
+                <textarea class="modal-textarea" id="nameList" placeholder="张三&#10;李四&#10;&#10;王五&#10;赵六"></textarea>
+                <p style="font-size: 12px; color: #94a3b8;">提示：空行会被保留为单独的空白单元格</p>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn modal-btn-cancel" id="cancelBtn">取消</button>
+                <button class="modal-btn modal-btn-confirm" id="confirmBtn">确定导入</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Call Name Modal -->
+    <div class="modal-overlay" id="callModal">
+        <div class="modal">
+            <div class="call-modal">
+                <h2>随机点名</h2>
+                <div class="call-name" id="calledName">---</div>
+                <div class="call-btns">
+                    <button class="modal-btn modal-btn-cancel" id="callCancelBtn">取消</button>
+                    <button class="modal-btn modal-btn-confirm" id="callAgainBtn">再点一次</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Finish Call Modal -->
+    <div class="modal-overlay" id="finishModal">
+        <div class="modal">
+            <div class="modal-header">
+                点名结果
+            </div>
+            <div class="modal-body">
+                <textarea class="finish-textarea" id="finishResult" readonly></textarea>
+                <p style="font-size: 12px; color: #64748b;">提示：可复制内容到剪贴板</p>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn modal-btn-cancel" id="finishCancelBtn">关闭</button>
+                <button class="modal-btn modal-btn-confirm" id="copyBtn">复制</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Storage key for seat data
+        const SEAT_DATA_KEY = 'seatData';
+        
+        // Function to save seat data to localStorage
+        function saveSeatData() {
+            const seatData = [];
+            document.querySelectorAll('.cell').forEach(cell => {
+                const groupId = parseInt(cell.dataset.group);
+                const cellIndex = parseInt(cell.dataset.index);
+                seatData.push({
+                    group: groupId,
+                    index: cellIndex,
+                    content: cell.textContent
+                });
+            });
+            
+            try {
+                localStorage.setItem(SEAT_DATA_KEY, JSON.stringify(seatData));
+                console.log('座位数据已保存到本地存储');
+            } catch (e) {
+                console.error('保存座位数据失败:', e);
+                alert('保存数据失败，请检查浏览器设置');
+            }
+        }
+        
+        // Function to load seat data from localStorage
+        function loadSeatData() {
+            try {
+                const data = localStorage.getItem(SEAT_DATA_KEY);
+                if (data) {
+                    const seatData = JSON.parse(data);
+                    seatData.forEach(item => {
+                        const cell = document.querySelector(`.cell[data-group="${item.group}"][data-index="${item.index}"]`);
+                        if (cell) {
+                            cell.textContent = item.content;
+                        }
+                    });
+                    console.log('座位数据已从本地存储加载');
+                    return true;
+                }
+            } catch (e) {
+                console.error('加载座位数据失败:', e);
+            }
+            return false;
+        }
+        
+        // Initialize the groups
+        function initializeGroups() {
+            const groupsContainer = document.getElementById('groupsContainer');
+            groupsContainer.innerHTML = '';
+            
+            // Create 12 groups
+            for (let i = 0; i < 12; i++) {
+                const group = document.createElement('div');
+                group.className = 'group';
+                
+                const header = document.createElement('div');
+                header.className = 'group-header';
+                header.textContent = `第${i+1}组`;
+                group.appendChild(header);
+                
+                const rows = document.createElement('div');
+                rows.className = 'group-rows';
+                
+                // Create 6 cells per group
+                for (let j = 0; j < 6; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.group = i;
+                    cell.dataset.index = j;
+                    rows.appendChild(cell);
+                }
+                
+                group.appendChild(rows);
+                groupsContainer.appendChild(group);
+            }
+        }
+        
+        // Drag and drop functionality using mouse events
+        let draggedCell = null;
+        let sourceCell = null;
+        let dragClone = null;
+        let editMode = false;
+        let callMode = false;
+        
+        function enableEditMode() {
+            if (editMode) return;
+            
+            // Disable call mode if active
+            if (callMode) {
+                disableCallMode();
+            }
+            
+            // Add edit mode indicator
+            const indicator = document.createElement('div');
+            indicator.className = 'edit-mode-indicator';
+            indicator.textContent = '拖拽编辑模式';
+            indicator.id = 'editModeIndicator';
+            document.body.appendChild(indicator);
+            
+            // Make all cells draggable
+            document.querySelectorAll('.cell').forEach(cell => {
+                cell.classList.add('draggable');
+                
+                // Add mouse event listeners
+                cell.addEventListener('mousedown', handleMouseDown);
+            });
+            
+            // Add global mouse event listeners
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+            
+            // Update button
+            const editBtn = document.getElementById('editBtn');
+            editBtn.textContent = '完成编辑';
+            editBtn.classList.add('edit-mode');
+            
+            editMode = true;
+        }
+        
+        function disableEditMode() {
+            if (!editMode) return;
+            
+            // Remove edit mode indicator
+            const indicator = document.getElementById('editModeIndicator');
+            if (indicator) indicator.remove();
+            
+            // Remove event listeners
+            document.querySelectorAll('.cell').forEach(cell => {
+                cell.classList.remove('draggable');
+                cell.removeEventListener('mousedown', handleMouseDown);
+            });
+            
+            // Remove global mouse event listeners
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+            
+            // Clean up any remaining drag elements
+            if (dragClone) {
+                dragClone.remove();
+                dragClone = null;
+            }
+            
+            // Reset all cells to normal state (remove drag-over and dragging classes)
+            document.querySelectorAll('.cell').forEach(cell => {
+                cell.classList.remove('drag-over', 'dragging');
+                // Reset any temporary background colors
+                cell.style.backgroundColor = '';
+            });
+            
+            // Update button
+            const editBtn = document.getElementById('editBtn');
+            editBtn.textContent = '编辑座位';
+            editBtn.classList.remove('edit-mode');
+            
+            editMode = false;
+        }
+        
+        function handleMouseDown(e) {
+            if (!editMode) return;
+            
+            // Only handle left mouse button
+            if (e.button !== 0) return;
+            
+            sourceCell = this;
+            draggedCell = this;
+            
+            // Create drag clone for visual feedback
+            dragClone = document.createElement('div');
+            dragClone.className = 'drag-clone';
+            dragClone.textContent = this.textContent;
+            dragClone.style.left = (e.clientX) + 'px';
+            dragClone.style.top = (e.clientY) + 'px';
+            document.body.appendChild(dragClone);
+            
+            // Prevent text selection
+            e.preventDefault();
+        }
+        
+        function handleMouseMove(e) {
+            if (!draggedCell || !dragClone) return;
+            
+            // Update drag clone position
+            dragClone.style.left = (e.clientX) + 'px';
+            dragClone.style.top = (e.clientY) + 'px';
+            
+            // Find the cell under the cursor
+            const cells = document.querySelectorAll('.cell');
+            let targetCell = null;
+            
+            for (let cell of cells) {
+                const rect = cell.getBoundingClientRect();
+                if (
+                    e.clientX >= rect.left &&
+                    e.clientX <= rect.right &&
+                    e.clientY >= rect.top &&
+                    e.clientY <= rect.bottom
+                ) {
+                    targetCell = cell;
+                    break;
+                }
+            }
+            
+            // Update visual feedback
+            cells.forEach(cell => {
+                cell.classList.remove('drag-over');
+            });
+            
+            if (targetCell && targetCell !== sourceCell) {
+                targetCell.classList.add('drag-over');
+            }
+        }
+        
+        function handleMouseUp(e) {
+            if (!draggedCell || !dragClone) return;
+            
+            // Clean up drag clone
+            dragClone.remove();
+            dragClone = null;
+            
+            // Find the cell under the cursor
+            const cells = document.querySelectorAll('.cell');
+            let targetCell = null;
+            
+            for (let cell of cells) {
+                const rect = cell.getBoundingClientRect();
+                if (
+                    e.clientX >= rect.left &&
+                    e.clientX <= rect.right &&
+                    e.clientY >= rect.top &&
+                    e.clientY <= rect.bottom
+                ) {
+                    targetCell = cell;
+                    break;
+                }
+            }
+            
+            // Swap content if we have a valid target cell
+            if (targetCell && targetCell !== sourceCell) {
+                // Swap content between source and target cells
+                const tempContent = sourceCell.textContent;
+                sourceCell.textContent = targetCell.textContent;
+                targetCell.textContent = tempContent;
+                
+                // Visual feedback for swap
+                const originalSourceBg = sourceCell.style.backgroundColor;
+                const originalTargetBg = targetCell.style.backgroundColor;
+                
+                sourceCell.style.backgroundColor = '#bbf7d0';
+                targetCell.style.backgroundColor = '#bbf7d0';
+                
+                setTimeout(() => {
+                    sourceCell.style.backgroundColor = originalSourceBg;
+                    targetCell.style.backgroundColor = originalTargetBg;
+                }, 300);
+                
+                // Save the updated data
+                saveSeatData();
+            }
+            
+            // Clean up
+            cells.forEach(cell => {
+                cell.classList.remove('drag-over');
+            });
+            
+            draggedCell = null;
+            sourceCell = null;
+        }
+        
+        // Call mode functionality
+        function enableCallMode() {
+            if (callMode) return;
+            
+            // Disable edit mode if active
+            if (editMode) {
+                disableEditMode();
+            }
+            
+            // Add call mode indicator
+            const indicator = document.createElement('div');
+            indicator.className = 'call-mode-indicator';
+            indicator.textContent = '点名选择模式 - 点击单元格选中/取消选中';
+            indicator.id = 'callModeIndicator';
+            document.body.appendChild(indicator);
+            
+            // Add click event listeners to cells for selection
+            document.querySelectorAll('.cell').forEach(cell => {
+                cell.addEventListener('click', handleCellClick);
+            });
+            
+            // Update button
+            const callBtn = document.getElementById('callBtn');
+            callBtn.textContent = '完成选择';
+            callBtn.classList.add('call-mode');
+            
+            callMode = true;
+        }
+        
+        function disableCallMode() {
+            if (!callMode) return;
+            
+            // Remove call mode indicator
+            const indicator = document.getElementById('callModeIndicator');
+            if (indicator) indicator.remove();
+            
+            // Remove event listeners
+            document.querySelectorAll('.cell').forEach(cell => {
+                cell.removeEventListener('click', handleCellClick);
+            });
+            
+            // Update button
+            const callBtn = document.getElementById('callBtn');
+            callBtn.textContent = '点名';
+            callBtn.classList.remove('call-mode');
+            
+            callMode = false;
+        }
+        
+        function handleCellClick(e) {
+            if (!callMode) return;
+            
+            // Toggle selected class
+            this.classList.toggle('selected');
+        }
+        
+        // Get selected cells
+        function getSelectedCells() {
+            return Array.from(document.querySelectorAll('.cell.selected'));
+        }
+        
+        // Clear all selected cells
+        function clearSelection() {
+            document.querySelectorAll('.cell.selected').forEach(cell => {
+                cell.classList.remove('selected');
+            });
+        }
+        
+        // Generate attendance report
+        function generateAttendanceReport() {
+            const cells = document.querySelectorAll('.cell');
+            const selectedCells = getSelectedCells();
+            
+            // Count total students (non-empty cells)
+            const allStudents = Array.from(cells)
+                .map(cell => cell.textContent.trim())
+                .filter(name => name !== '');
+            const totalStudents = allStudents.length;
+            
+            // Get selected students (absent students)
+            const absentStudents = selectedCells
+                .map(cell => cell.textContent.trim())
+                .filter(name => name !== '');
+            
+            const presentStudents = totalStudents - absentStudents.length;
+            
+            // Format the report - using the corrected format with colon
+            let report = `总人数：${totalStudents}人\n`;
+            report += `出勤：${presentStudents}人\n`;
+            report += `未出勤：\n`;
+            
+            if (absentStudents.length > 0) {
+                absentStudents.forEach(student => {
+                    report += `\t${student}\n`;
+                });
+            } else {
+                report += `\t无\n`;
+            }
+            
+            return report.trim();
+        }
+        
+        // Load seat data and initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize the groups
+            initializeGroups();
+            
+            // Try to load saved seat data
+            const loaded = loadSeatData();
+            if (loaded) {
+                console.log('已加载保存的座位安排');
+            } else {
+                console.log('没有找到保存的座位安排');
+            }
+            
+            const importBtn = document.getElementById('importBtn');
+            const callBtn = document.getElementById('callBtn');
+            const editBtn = document.getElementById('editBtn');
+            const clearBtn = document.getElementById('clearBtn');
+            const finishBtn = document.getElementById('finishBtn');
+            const importModal = document.getElementById('importModal');
+            const callModal = document.getElementById('callModal');
+            const finishModal = document.getElementById('finishModal');
+            const cancelBtn = document.getElementById('cancelBtn');
+            const confirmBtn = document.getElementById('confirmBtn');
+            const callCancelBtn = document.getElementById('callCancelBtn');
+            const callAgainBtn = document.getElementById('callAgainBtn');
+            const finishCancelBtn = document.getElementById('finishCancelBtn');
+            const copyBtn = document.getElementById('copyBtn');
+            const nameListTextarea = document.getElementById('nameList');
+            const calledNameElement = document.getElementById('calledName');
+            const finishResultTextarea = document.getElementById('finishResult');
+            const cells = document.querySelectorAll('.cell');
+            
+            // Show import modal when import button is clicked
+            importBtn.addEventListener('click', function() {
+                importModal.classList.add('active');
+                nameListTextarea.focus();
+            });
+            
+            // Toggle call mode
+            callBtn.addEventListener('click', function() {
+                if (callMode) {
+                    disableCallMode();
+                } else {
+                    enableCallMode();
+                }
+            });
+            
+            // Toggle edit mode
+            editBtn.addEventListener('click', function() {
+                if (editMode) {
+                    disableEditMode();
+                } else {
+                    enableEditMode();
+                }
+            });
+            
+            // Clear selection
+            clearBtn.addEventListener('click', function() {
+                clearSelection();
+                // Optional: show feedback
+                const btn = this;
+                const originalText = btn.textContent;
+                btn.textContent = '已清空';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                }, 1000);
+            });
+            
+            // Show finish modal with attendance report
+            finishBtn.addEventListener('click', function() {
+                const report = generateAttendanceReport();
+                finishResultTextarea.value = report;
+                finishModal.classList.add('active');
+            });
+            
+            // Close import modal when cancel button is clicked
+            cancelBtn.addEventListener('click', function() {
+                importModal.classList.remove('active');
+                nameListTextarea.value = '';
+            });
+            
+            // Close import modal when clicking outside the modal
+            importModal.addEventListener('click', function(e) {
+                if (e.target === importModal) {
+                    importModal.classList.remove('active');
+                    nameListTextarea.value = '';
+                }
+            });
+            
+            // Close call modal when cancel button is clicked
+            callCancelBtn.addEventListener('click', function() {
+                callModal.classList.remove('active');
+            });
+            
+            // Close call modal when clicking outside the modal
+            callModal.addEventListener('click', function(e) {
+                if (e.target === callModal) {
+                    callModal.classList.remove('active');
+                }
+            });
+            
+            // Close finish modal when cancel button is clicked
+            finishCancelBtn.addEventListener('click', function() {
+                finishModal.classList.remove('active');
+            });
+            
+            // Close finish modal when clicking outside the modal
+            finishModal.addEventListener('click', function(e) {
+                if (e.target === finishModal) {
+                    finishModal.classList.remove('active');
+                }
+            });
+            
+            // Handle confirm button click for import
+            confirmBtn.addEventListener('click', function() {
+                const namesText = nameListTextarea.value;
+                
+                // Clear all cells first
+                document.querySelectorAll('.cell').forEach(cell => {
+                    cell.textContent = '';
+                });
+                
+                if (namesText !== '') {
+                    // Split names by line breaks, preserving empty lines
+                    const lines = namesText.split(/\r?\n/);
+                    
+                    // Fill cells in order: group by group, cell by cell
+                    let lineIndex = 0;
+                    
+                    // Fill all 12 groups × 6 cells = 72 cells
+                    for (let group = 0; group < 12; group++) {
+                        for (let index = 0; index < 6; index++) {
+                            if (lineIndex < lines.length) {
+                                const cell = document.querySelector(`.cell[data-group="${group}"][data-index="${index}"]`);
+                                if (cell) {
+                                    cell.textContent = lines[lineIndex];
+                                    lineIndex++;
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Save the data to localStorage
+                    saveSeatData();
+                    
+                    // Show success message
+                    const blankLines = lines.filter(line => line.trim() === '').length;
+                    alert(`成功导入 ${lines.length} 行内容（包含 ${blankLines} 个空白行）！\n数据已保存到本地。`);
+                } else {
+                    // Save empty state
+                    saveSeatData();
+                    alert('输入内容为空，已清空所有单元格并保存。');
+                }
+                
+                importModal.classList.remove('active');
+                nameListTextarea.value = '';
+            });
+            
+            // Call again button - now uses selected cells if any, otherwise all cells
+            callAgainBtn.addEventListener('click', function() {
+                let names = [];
+                const selectedCells = getSelectedCells();
+                
+                if (selectedCells.length > 0) {
+                    // Use only selected cells
+                    names = selectedCells.map(cell => cell.textContent.trim()).filter(name => name !== '');
+                } else {
+                    // Use all non-empty cells
+                    names = Array.from(document.querySelectorAll('.cell'))
+                        .map(cell => cell.textContent.trim())
+                        .filter(name => name !== '');
+                }
+                
+                if (names.length > 0) {
+                    const randomIndex = Math.floor(Math.random() * names.length);
+                    calledNameElement.textContent = names[randomIndex];
+                } else {
+                    alert('没有可点名的学生，请先导入名单或选择单元格。');
+                }
+            });
+            
+            // Copy button for finish modal
+            copyBtn.addEventListener('click', function() {
+                finishResultTextarea.select();
+                document.execCommand('copy');
+                
+                // Show feedback
+                const originalText = copyBtn.textContent;
+                copyBtn.textContent = '已复制';
+                setTimeout(() => {
+                    copyBtn.textContent = originalText;
+                }, 1500);
+            });
+            
+            // Allow Enter key to confirm when textarea is focused (Ctrl+Enter)
+            nameListTextarea.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && e.ctrlKey) {
+                    confirmBtn.click();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
