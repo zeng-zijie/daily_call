@@ -198,11 +198,13 @@
             border-radius: 12px;
             width: 90%;
             max-width: 600px;
-            max-height: 80vh;
+            max-height: 85vh;
             overflow: hidden;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
             transform: scale(0.9);
             transition: transform 0.3s ease;
+            display: flex;
+            flex-direction: column;
         }
 
         .modal-overlay.active .modal {
@@ -215,15 +217,18 @@
             color: white;
             font-size: 18px;
             font-weight: 600;
+            flex-shrink: 0;
         }
 
         .modal-body {
             padding: 20px;
+            overflow-y: auto;
+            flex-grow: 1;
         }
 
         .modal-textarea {
             width: 100%;
-            height: 200px;
+            height: 150px;
             padding: 12px;
             border: 2px solid #e2e8f0;
             border-radius: 8px;
@@ -246,6 +251,11 @@
             gap: 12px;
             border-top: 1px solid #e2e8f0;
             background-color: #f8fafc;
+            flex-shrink: 0;
+            position: sticky;
+            bottom: 0;
+            background: linear-gradient(to bottom, rgba(248, 250, 252, 0.9), #f8fafc);
+            backdrop-filter: blur(5px);
         }
 
         .modal-btn {
@@ -296,7 +306,7 @@
 
         .finish-textarea {
             width: 100%;
-            height: 200px;
+            height: 150px;
             padding: 15px;
             border: 2px solid #e2e8f0;
             border-radius: 8px;
@@ -315,7 +325,7 @@
 
         .export-textarea {
             width: 100%;
-            height: 250px;
+            height: 180px;
             padding: 15px;
             border: 2px solid #e2e8f0;
             border-radius: 8px;
@@ -377,6 +387,7 @@
             min-height: 40px;
         }
 
+        /* Sticky footer for modals on mobile */
         @media (max-width: 768px) {
             .button-container {
                 top: 10px;
@@ -400,12 +411,70 @@
                 padding: 8px 12px;
                 font-size: 12px;
             }
+
+            /* Modal adjustments for mobile */
+            .modal {
+                width: 95%;
+                max-height: 80vh;
+            }
+
+            .modal-textarea {
+                height: 120px;
+            }
+
+            .modal-footer {
+                position: -webkit-sticky;
+                position: sticky;
+                bottom: 0;
+                padding: 12px;
+            }
+
+            .modal-btn {
+                padding: 8px 16px;
+                font-size: 13px;
+            }
         }
 
         @media (max-width: 480px) {
             .groups-container {
                 grid-template-columns: 1fr;
             }
+
+            /* Further optimize modal for small screens */
+            .modal-header {
+                padding: 15px;
+                font-size: 16px;
+            }
+
+            .modal-body {
+                padding: 15px;
+            }
+
+            .modal-textarea {
+                height: 100px;
+                font-size: 13px;
+            }
+
+            .modal-footer {
+                padding: 10px;
+            }
+
+            .modal-btn {
+                padding: 8px 14px;
+                font-size: 12px;
+            }
+        }
+
+        /* Ensure modal footer is always visible */
+        .modal-content {
+            display: flex;
+            flex-direction: column;
+            max-height: 100%;
+        }
+
+        .modal-scrollable {
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
     </style>
 </head>
@@ -981,7 +1050,10 @@
             // Show import modal when import button is clicked
             importBtn.addEventListener('click', function() {
                 importModal.classList.add('active');
-                nameListTextarea.focus();
+                // Focus on textarea after a short delay to ensure modal is rendered
+                setTimeout(() => {
+                    nameListTextarea.focus();
+                }, 300);
             });
 
             // Show export modal when export button is clicked
@@ -1174,6 +1246,17 @@
                     confirmBtn.click();
                 }
             });
+
+            // Mobile-specific fixes
+            // Prevent iOS Safari from zooming on input focus
+            if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+                document.addEventListener('touchstart', function() {
+                    document.body.style.zoom = 0.99;
+                    setTimeout(function() {
+                        document.body.style.zoom = 1;
+                    }, 100);
+                });
+            }
         });
     </script>
 </body>
